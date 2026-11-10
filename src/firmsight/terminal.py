@@ -6,8 +6,9 @@ import hashlib
 import json
 import subprocess
 import sys
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable, TextIO
+from typing import TextIO
 
 from .core import FirmSightError
 from .network import lab_command

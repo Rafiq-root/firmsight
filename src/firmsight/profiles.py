@@ -10,7 +10,6 @@ from typing import Any
 from .core import FirmSightError
 from .firmware import SUPPORTED_ARCHES
 
-
 BUILTIN_PROFILE_DIR = Path(__file__).parent / "profiles"
 NETWORK_DEVICES = {"e1000", "e1000-82540em", "e1000-82545em", "e1000-82544gc",
                    "rtl8139", "ne2k_pci", "virtio-net-device", "virtio-net-pci",

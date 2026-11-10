@@ -8,7 +8,6 @@ from pathlib import Path
 
 from .core import FirmSightError, _tool
 
-
 _FUNCTION = re.compile(r"(?:\*0x[0-9a-fA-F]+|[A-Za-z_.$][A-Za-z0-9_.$@]*)\Z")
 CRASH_SYMBOLS = ("panic", "__stack_chk_fail", "__fortify_fail", "abort")
 

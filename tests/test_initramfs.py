@@ -3,8 +3,8 @@ import stat
 import struct
 from pathlib import Path
 
-from firmsight.initramfs import create_initramfs
 from firmsight.firmware import prepare_firmware
+from firmsight.initramfs import create_initramfs
 
 
 def _entries(payload: bytes) -> dict[str, tuple[int, bytes]]:

@@ -10,7 +10,6 @@ import socket
 import socketserver
 import threading
 
-
 SINKHOLE_IP = "172.29.41.2"
 
 

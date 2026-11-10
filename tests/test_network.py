@@ -2,7 +2,12 @@
 import pytest
 
 from firmsight.core import FirmSightError
-from firmsight.network import init_lab, lab_emulate_command, lab_capture_command, qemu_lab_network_args
+from firmsight.network import (
+    init_lab,
+    lab_capture_command,
+    lab_emulate_command,
+    qemu_lab_network_args,
+)
 from firmsight.sandbox.sinkhole.sinkhole import DNSHandler
 
 

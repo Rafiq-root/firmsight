@@ -7,10 +7,10 @@ import json
 import os
 import shutil
 import subprocess
-from datetime import datetime, timezone
+from collections.abc import Callable, Sequence
 from dataclasses import asdict, dataclass
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Callable, Sequence
 
 
 class FirmSightError(RuntimeError):

@@ -8,8 +8,8 @@ import os
 import re
 import struct
 import subprocess
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable
 
 from .core import FirmSightError, _tool, extract_firmware
 from .initramfs import create_initramfs
@@ -70,7 +70,7 @@ def _describe(path: Path) -> str:
 
 def _kernel_candidates(root: Path, files: list[Path]) -> list[dict[str, str]]:
     candidates = []
-    name_hint = re.compile(r"(^|[/_.-])(kernel|zimage|uimage|vmlinuz|vmlinux|image)([/_.-]|$)", re.I)
+    name_hint = re.compile(r"(^|[/_.-])(kernel|zimage|uimage|vmlinuz|vmlinux|image)([/_.-]|$)", re.IGNORECASE)
     for path in files:
         try:
             size = path.stat().st_size

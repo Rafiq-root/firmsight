@@ -8,15 +8,28 @@ import sys
 from pathlib import Path
 
 from . import __version__
-from .core import (FirmSightError, capture_command, extract_firmware, inspect_firmware,
-                   qemu_command, run_command, trace_command)
+from .core import (
+    FirmSightError,
+    capture_command,
+    extract_firmware,
+    inspect_firmware,
+    qemu_command,
+    run_command,
+    trace_command,
+)
 from .firmware import initramfs_qemu_command, prepare_firmware
-from .network import (init_lab, lab_capture_command, lab_command, lab_emulate_command,
-                      lab_trace_command, qemu_lab_network_args)
+from .network import (
+    init_lab,
+    lab_capture_command,
+    lab_command,
+    lab_emulate_command,
+    lab_trace_command,
+    qemu_lab_network_args,
+)
 from .profiles import list_profiles, load_profile
 from .reports import analyze_rootfs, write_report
-from .tracer import create_gdb_trace, run_timed
 from .terminal import run_tui
+from .tracer import create_gdb_trace, run_timed
 
 
 def parser() -> argparse.ArgumentParser:

@@ -8,21 +8,20 @@ import json
 import os
 import re
 import stat
-from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 from pathlib import Path
 from typing import Any
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from .core import FirmSightError, inspect_firmware
 from .firmware import _elf_arch
 
-
-URL_RE = re.compile(rb"\b(?:https?|ftp)://[^\s\x00\"'<>]{1,512}", re.I)
+URL_RE = re.compile(rb"\b(?:https?|ftp)://[^\s\x00\"'<>]{1,512}", re.IGNORECASE)
 IP_RE = re.compile(rb"(?<![0-9])(?:[0-9]{1,3}\.){3}[0-9]{1,3}(?![0-9])")
-DOMAIN_RE = re.compile(rb"(?<![A-Za-z0-9_-])(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+(?:com|net|org|io|ru|cn|info|biz|cc|tk|xyz|top|local|lan)(?![A-Za-z0-9_-])", re.I)
+DOMAIN_RE = re.compile(rb"(?<![A-Za-z0-9_-])(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+(?:com|net|org|io|ru|cn|info|biz|cc|tk|xyz|top|local|lan)(?![A-Za-z0-9_-])", re.IGNORECASE)
 CREDENTIAL_RE = re.compile(rb"(?im)^\s*(password|passwd|pwd|secret|token|private[_-]?key|auth[_-]?key)\s*[:=]")
 SUSPICIOUS_RE = re.compile(rb"(?i)\b(telnetd|tftp|wget|curl|nc|netcat|busybox\s+telnetd|iptables\s+-F|/bin/sh)\b")
-STARTUP_RE = re.compile(r"(^|/)(init\.d/|rc[0-9S]?\.d/|rc\.local$|inittab$|preinit$|rcS$|xinetd\.d/|inetd\.conf$)", re.I)
-SERVICE_RE = re.compile(r"(^|/)(inetd\.conf$|xinetd\.d/|services$|init\.d/|rc[0-9S]?\.d/)", re.I)
+STARTUP_RE = re.compile(r"(^|/)(init\.d/|rc[0-9S]?\.d/|rc\.local$|inittab$|preinit$|rcS$|xinetd\.d/|inetd\.conf$)", re.IGNORECASE)
+SERVICE_RE = re.compile(r"(^|/)(inetd\.conf$|xinetd\.d/|services$|init\.d/|rc[0-9S]?\.d/)", re.IGNORECASE)
 MAX_REPORT_FINDINGS = 2000
 MAX_INVENTORY_ENTRIES = 200_000
 MAX_TOTAL_SCAN_BYTES = 256 * 1024 * 1024

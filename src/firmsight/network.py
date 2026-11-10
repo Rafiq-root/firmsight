@@ -105,7 +105,6 @@ def lab_command(workdir: Path, action: str, extra: list[str] | None = None) -> l
 def lab_emulate_command(workdir: Path, qemu_args: list[str]) -> list[str]:
     workdir = workdir.expanduser().resolve()
     prefix = _compose_prefix(workdir)
-    docker = prefix[0]
     # QEMU binaries and assets are container-side; translate host asset paths to /analysis.
     translated = list(qemu_args)
     for flag in ("-kernel", "-initrd", "-dtb"):

@@ -1,0 +1,5 @@
+FROM debian:bookworm-slim
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    binwalk squashfs-tools cpio p7zip-full xz-utils gzip bzip2 lzop lz4 zstd tar unzip \
+    && rm -rf /var/lib/apt/lists/*
+ENTRYPOINT ["binwalk"]

@@ -1,0 +1,12 @@
+{
+  "name": "mipsel-malta",
+  "architecture": "mipsel",
+  "description": "Generic little-endian MIPS Malta board",
+  "machine": "malta",
+  "cpu": "24Kf",
+  "memory": "512M",
+  "console": "ttyS0,115200",
+  "init": "/sbin/init",
+  "devices": [],
+  "drives": []
+}

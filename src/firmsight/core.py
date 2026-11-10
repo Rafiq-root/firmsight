@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import shutil
 import subprocess
+from datetime import datetime, timezone
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Sequence
+from typing import Callable, Sequence
 
 
 class FirmSightError(RuntimeError):
@@ -57,20 +59,103 @@ def inspect_firmware(path: Path) -> FirmwareReport:
     return FirmwareReport(str(path), path.stat().st_size, digest.hexdigest(), signatures, arch)
 
 
-def extract_firmware(firmware: Path, destination: Path) -> Path:
+def extract_firmware(firmware: Path, destination: Path, mode: str = "docker",
+                     progress: Callable[[str], None] | None = None) -> Path:
     firmware = firmware.expanduser().resolve()
     if not firmware.is_file():
         raise FirmSightError(f"Firmware file does not exist: {firmware}")
+    if mode not in ("docker", "host"):
+        raise FirmSightError("Extractor mode must be 'docker' or 'host'")
     destination = destination.expanduser().resolve()
     destination.mkdir(parents=True, exist_ok=True)
-    binwalk = _tool("binwalk")
-    result = subprocess.run(
-        [binwalk, "-e", "-M", "-C", str(destination), str(firmware)],
-        capture_output=True, text=True, check=False,
+    existing = [item for item in destination.iterdir()]
+    if existing:
+        raise FirmSightError(f"Extraction output directory must be empty: {destination}")
+    started = datetime.now(timezone.utc).isoformat()
+    input_hash = hashlib.sha256()
+    with firmware.open("rb") as stream:
+        for block in iter(lambda: stream.read(1024 * 1024), b""):
+            input_hash.update(block)
+
+    docker = shutil.which("docker") if mode == "docker" else None
+    if mode == "docker":
+        if not docker:
+            raise FirmSightError("Docker executable not found. Install Docker or explicitly use --extractor-mode host.")
+        image = "firmsight-extractor:0.1.0"
+        if progress:
+            progress("Checking the isolated Binwalk image")
+        image_check = subprocess.run([docker, "image", "inspect", image], capture_output=True, text=True, check=False)
+        if image_check.returncode:
+            if progress:
+                progress("Building the constrained extractor image (first run may take several minutes)")
+            dockerfile = Path(__file__).parent / "sandbox" / "Dockerfile.extractor"
+            build = subprocess.run([docker, "build", "--tag", image, "--file", str(dockerfile), str(dockerfile.parent)],
+                                   capture_output=True, text=True, check=False)
+            if build.returncode:
+                raise FirmSightError(f"Could not build the isolated extractor image: {(build.stderr or build.stdout).strip()}")
+        for path in (firmware, destination):
+            if ":" in str(path) or "," in str(path):
+                raise FirmSightError("Docker bind paths cannot contain ':' or ',' in this prototype")
+        uid, gid = os.getuid(), os.getgid()
+        command = [docker, "run", "--rm", "--network", "none", "--read-only", "--cap-drop", "ALL",
+                   "--security-opt", "no-new-privileges:true", "--pids-limit", "128", "--memory", "1g",
+                   "--cpus", "2", "--user", f"{uid}:{gid}", "--env", "HOME=/tmp",
+                   "--tmpfs", "/tmp:rw,nosuid,nodev,size=512m",
+                   "--volume", f"{firmware}:/input/firmware:ro", "--volume", f"{destination}:/output:rw",
+                   image, "-e", "-M", "-C", "/output", "/input/firmware"]
+    else:
+        binwalk = _tool("binwalk")
+        command = [binwalk, "-e", "-M", "-C", str(destination), str(firmware)]
+    version_specs = (("binwalk", ["--version"]), ("unsquashfs", ["-version"]),
+                     ("7z", ["i"]), ("cpio", ["--version"]))
+    tool_versions: dict[str, str] = {}
+    if progress:
+        progress("Recording unpacker versions")
+    for tool_name, version_args in version_specs:
+        if mode == "docker":
+            version_cmd = [docker, "run", "--rm", "--network", "none", "--read-only", "--cap-drop", "ALL",
+                           "--entrypoint", tool_name, image, *version_args]
+        else:
+            tool_path = shutil.which(tool_name)
+            if not tool_path:
+                tool_versions[tool_name] = "not installed"
+                continue
+            version_cmd = [tool_path, *version_args]
+        try:
+            version_result = subprocess.run(version_cmd, capture_output=True, text=True, check=False, timeout=30)
+            tool_versions[tool_name] = ((version_result.stdout or version_result.stderr).strip()[:2000]
+                                        or f"exit status {version_result.returncode}")
+        except subprocess.TimeoutExpired:
+            tool_versions[tool_name] = "version query timed out"
+    try:
+        if progress:
+            progress("Running Binwalk extraction with a 10 minute limit")
+        result = subprocess.run(command, capture_output=True, text=True, check=False, timeout=600)
+        return_code = result.returncode
+        stdout, stderr = result.stdout, result.stderr
+    except subprocess.TimeoutExpired as exc:
+        return_code = 124
+        stdout = (exc.stdout or b"").decode("utf-8", "replace") if isinstance(exc.stdout, bytes) else (exc.stdout or "")
+        stderr = (exc.stderr or b"").decode("utf-8", "replace") if isinstance(exc.stderr, bytes) else (exc.stderr or "")
+        stderr += "\nExtraction exceeded the 600 second limit."
+    extracted_count = sum(1 for item in destination.rglob("*") if item.name not in ("firmsight-extraction.json", "firmsight-extraction.log"))
+    log = {
+        "started_at": started, "finished_at": datetime.now(timezone.utc).isoformat(),
+        "mode": mode, "firmware": str(firmware), "firmware_sha256": input_hash.hexdigest(),
+        "tool_versions": tool_versions, "command": command,
+        "return_code": return_code, "status": "success" if return_code == 0 else ("partial_failure" if extracted_count else "failure"),
+        "extracted_entries": extracted_count, "stdout": stdout[-1_000_000:], "stderr": stderr[-1_000_000:],
+    }
+    (destination / "firmsight-extraction.json").write_text(json.dumps(log, indent=2) + "\n", encoding="utf-8")
+    (destination / "firmsight-extraction.log").write_text(
+        f"FirmSight extraction status: {log['status']}\nTools: {json.dumps(tool_versions, sort_keys=True)}\nReturn code: {return_code}\n\n{stdout}\n{stderr}\n",
+        encoding="utf-8",
     )
-    if result.returncode:
-        detail = result.stderr.strip() or result.stdout.strip()
-        raise FirmSightError(f"binwalk extraction failed ({result.returncode}): {detail}")
+    if progress:
+        progress(f"Extraction ended with {log['status']} and {extracted_count} entries")
+    if return_code:
+        detail = stderr.strip() or stdout.strip() or f"exit status {return_code}"
+        raise FirmSightError(f"Binwalk extraction {log['status']} ({return_code}); see {destination / 'firmsight-extraction.log'}: {detail[-1000:]}")
     return destination
 
 

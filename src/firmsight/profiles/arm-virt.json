@@ -1,0 +1,12 @@
+{
+  "name": "arm-virt",
+  "architecture": "arm",
+  "description": "Generic 32-bit ARM virt machine",
+  "machine": "virt",
+  "cpu": "cortex-a15",
+  "memory": "512M",
+  "console": "ttyAMA0,115200",
+  "init": "/sbin/init",
+  "devices": [],
+  "drives": []
+}

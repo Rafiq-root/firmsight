@@ -1,0 +1,12 @@
+{
+  "name": "aarch64-virt",
+  "architecture": "aarch64",
+  "description": "Generic 64-bit ARM virt machine",
+  "machine": "virt",
+  "cpu": "cortex-a57",
+  "memory": "1024M",
+  "console": "ttyAMA0,115200",
+  "init": "/sbin/init",
+  "devices": [],
+  "drives": []
+}

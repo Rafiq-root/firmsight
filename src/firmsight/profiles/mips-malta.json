@@ -1,0 +1,12 @@
+{
+  "name": "mips-malta",
+  "architecture": "mips",
+  "description": "Generic big-endian MIPS Malta board",
+  "machine": "malta",
+  "cpu": "24Kf",
+  "memory": "512M",
+  "console": "ttyS0,115200",
+  "init": "/sbin/init",
+  "devices": [],
+  "drives": []
+}

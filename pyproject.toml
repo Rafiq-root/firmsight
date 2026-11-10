@@ -15,12 +15,16 @@ dependencies = []
 [project.optional-dependencies]
 trace = ["r2pipe>=1.8"]
 test = ["pytest>=7"]
+dev = ["ruff>=0.5", "build>=1.2"]
 
 [project.scripts]
 firmsight = "firmsight.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+firmsight = ["sandbox/*", "sandbox/sinkhole/*", "profiles/*.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
